@@ -212,13 +212,15 @@
 <script>
   const CONFIG = {
 
-    // Paste your published Google Sheet CSV link here
-    // (File → Share → Publish to web → CSV → Copy link)
-    SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4LkgwWTgO_G1woy4jCpYErb4WPXPdK1tKpht1tIg6bYiWdLfl8lrqUOZHV9sxFg18VwHvpb5DpJHG/pub?output=csv",
+    // Both your Google Sheet CSV URLs (auto-fixed to CSV format)
+    SHEET_CSV_URLS: [
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4LkgwWTgO_G1woy4jCpYErb4WPXPdK1tKpht1tIg6bYiWdLfl8lrqUOZHV9sxFg18VwHvpb5DpJHG/pub?gid=139213210&single=true&output=csv",
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4LkgwWTgO_G1woy4jCpYErb4WPXPdK1tKpht1tIg6bYiWdLfl8lrqUOZHV9sxFg18VwHvpb5DpJHG/pub?gid=238922280&single=true&output=csv"
+    ],
 
     // Paste your Claude API key here
     // (Get it from console.anthropic.com)
-    CLAUDE_API_KEY: "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",
+    CLAUDE_API_KEY: "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",
 
     // How often to auto-refresh (in minutes). 0 = no auto-refresh
     AUTO_REFRESH_MINUTES: 30,
@@ -309,7 +311,7 @@ function showError(msg) {
 // ── Main function ──────────────────────────────────────────────────────
 async function runInsights() {
   // Config check
-  if (CONFIG.SHEET_CSV_URL.includes('YOUR_') || CONFIG.CLAUDE_API_KEY.includes('YOUR_')) {
+  if (CONFIG.CLAUDE_API_KEY.includes('YOUR_')) {
     document.getElementById('config-warning').style.display = 'block';
     document.getElementById('loading').style.display = 'none';
     return;
@@ -319,14 +321,17 @@ async function runInsights() {
   document.getElementById('config-warning').style.display = 'none';
   setLoading(true);
 
-  // ── Step 1: Fetch Google Sheet CSV ─────────────────────────
-  let rows;
+  // ── Step 1: Fetch both Google Sheet CSVs ───────────────────
+  let rows = [];
   try {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(CONFIG.SHEET_CSV_URL)}`;
-    const res = await fetch(proxyUrl);
-    if (!res.ok) throw new Error('Could not fetch sheet. Make sure it is published publicly.');
-    const text = await res.text();
-    rows = parseCSV(text);
+    for (const sheetUrl of CONFIG.SHEET_CSV_URLS) {
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetUrl)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Could not fetch sheet. Make sure it is published publicly.');
+      const text = await res.text();
+      const sheetRows = parseCSV(text);
+      rows = rows.concat(sheetRows);
+    }
   } catch (e) {
     showError(`Google Sheets fetch failed: ${e.message}`);
     return;
