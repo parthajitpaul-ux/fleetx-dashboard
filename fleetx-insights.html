@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Marketing Insights – Fleetx</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  /* ─── CONFIG: only colours live here ─────────────────────── */
+  :root {
+    --bg:        #f0f4fa;
+    --card:      #ffffff;
+    --border:    #dde3f0;
+    --accent:    #1a56db;
+    --hit:       #0e9f6e;
+    --hit-bg:    #ecfdf5;
+    --hit-border:#a7f3d0;
+    --miss:      #e02424;
+    --miss-bg:   #fff5f5;
+    --miss-border:#fecaca;
+    --watch:     #d97706;
+    --watch-bg:  #fffbeb;
+    --watch-border:#fde68a;
+    --text:      #1e293b;
+    --muted:     #64748b;
+    --header-bg: #1a56db;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ─── HEADER ──────────────────────────────────────────────── */
+  header {
+    background: var(--header-bg);
+    color: #fff;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+  header span { font-size: .75rem; opacity: .75; font-family: 'DM Mono', monospace; }
+
+  /* ─── MAIN CONTAINER ──────────────────────────────────────── */
+  main { padding: 24px 28px; max-width: 960px; margin: 0 auto; }
+
+  /* ─── CONFIG WARNING ──────────────────────────────────────── */
+  #config-warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: .85rem;
+    color: #92400e;
+    display: none;
+  }
+  #config-warning strong { display: block; margin-bottom: 4px; }
+
+  /* ─── LAST UPDATED BAR ────────────────────────────────────── */
+  .meta-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .meta-bar p { font-size: .78rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  #refresh-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity .2s;
+  }
+  #refresh-btn:hover { opacity: .85; }
+  #refresh-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ─── LOADING ─────────────────────────────────────────────── */
+  #loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── ERROR ───────────────────────────────────────────────── */
+  #error-box {
+    background: var(--miss-bg);
+    border: 1px solid var(--miss-border);
+    border-radius: 10px;
+    padding: 18px;
+    color: var(--miss);
+    font-size: .88rem;
+    display: none;
+  }
+
+  /* ─── SUMMARY CARDS ───────────────────────────────────────── */
+  #insights { display: none; }
+
+  .section-label {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 600px) { .cards-grid { grid-template-columns: 1fr; } }
+
+  .insight-card {
+    border-radius: 12px;
+    padding: 16px 18px;
+    border: 1px solid;
+    animation: fadeUp .4s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .insight-card.hit   { background: var(--hit-bg);   border-color: var(--hit-border);   }
+  .insight-card.miss  { background: var(--miss-bg);  border-color: var(--miss-border);  }
+  .insight-card.watch { background: var(--watch-bg); border-color: var(--watch-border); }
+
+  .card-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-bottom: 10px;
+  }
+  .hit  .card-tag { background: var(--hit);   color: #fff; }
+  .miss .card-tag { background: var(--miss);  color: #fff; }
+  .watch .card-tag{ background: var(--watch); color: #fff; }
+
+  .card-text {
+    font-size: .88rem;
+    line-height: 1.55;
+    color: var(--text);
+  }
+
+  /* ─── NARRATIVE SECTION ───────────────────────────────────── */
+  .narrative-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 24px;
+  }
+  .narrative-box h3 {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: -.01em;
+  }
+  .narrative-box p {
+    font-size: .87rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+
+  /* ─── FOOTER ──────────────────────────────────────────────── */
+  footer {
+    text-align: center;
+    font-size: .72rem;
+    color: var(--muted);
+    padding: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ▶  STEP 1 — Paste your Google Sheet CSV URL below
+     ▶  STEP 2 — Paste your Claude API key below
+     ════════════════════════════════════════════════════════ -->
+<script>
+  const CONFIG = {
+
+    // Paste your published Google Sheet CSV link here
+    // (File → Share → Publish to web → CSV → Copy link)
+    SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4LkgwWTgO_G1woy4jCpYErb4WPXPdK1tKpht1tIg6bYiWdLfl8lrqUOZHV9sxFg18VwHvpb5DpJHG/pub?output=csv",
+
+    // Paste your Claude API key here
+    // (Get it from console.anthropic.com)
+    CLAUDE_API_KEY: "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",
+
+    // How often to auto-refresh (in minutes). 0 = no auto-refresh
+    AUTO_REFRESH_MINUTES: 30,
+  };
+</script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<header>
+  <h1>⚡ Marketing Insights — Fleetx</h1>
+  <span id="last-updated">Loading…</span>
+</header>
+
+<main>
+  <div id="config-warning">
+    <strong>⚠️ Setup Required</strong>
+    Open this file in a text editor and fill in your SHEET_CSV_URL and CLAUDE_API_KEY inside the CONFIG block at the top. Then save and re-open.
+  </div>
+
+  <div class="meta-bar">
+    <p id="data-note">Fetching latest data…</p>
+    <button id="refresh-btn" onclick="runInsights()">↻ Refresh Insights</button>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Analysing your dashboard data…</p>
+  </div>
+
+  <div id="error-box"></div>
+
+  <div id="insights">
+    <!-- Narrative -->
+    <div class="narrative-box">
+      <h3>📋 Executive Summary</h3>
+      <p id="narrative-text"></p>
+    </div>
+
+    <!-- Hits -->
+    <p class="section-label">✅ What's Going Well</p>
+    <div class="cards-grid" id="hits-grid"></div>
+
+    <!-- Misses -->
+    <p class="section-label">🔴 Where You Need to Focus</p>
+    <div class="cards-grid" id="misses-grid"></div>
+
+    <!-- Watch -->
+    <p class="section-label">⚠️ Keep an Eye On</p>
+    <div class="cards-grid" id="watch-grid"></div>
+  </div>
+</main>
+
+<footer>Powered by Claude AI · Auto-refreshes every 30 min · Data from Google Sheets</footer>
+
+<script>
+// ── Helpers ────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? '']));
+  });
+}
+
+function makeCard(text, type) {
+  const labels = { hit: '✅ Doing Well', miss: '🔴 Needs Work', watch: '⚠️ Watch' };
+  return `
+    <div class="insight-card ${type}" style="animation-delay:${Math.random()*0.3}s">
+      <span class="card-tag">${labels[type]}</span>
+      <p class="card-text">${text}</p>
+    </div>`;
+}
+
+function setLoading(on) {
+  document.getElementById('loading').style.display = on ? 'block' : 'none';
+  document.getElementById('insights').style.display = on ? 'none' : 'block';
+  document.getElementById('refresh-btn').disabled = on;
+}
+
+function showError(msg) {
+  setLoading(false);
+  document.getElementById('insights').style.display = 'none';
+  const box = document.getElementById('error-box');
+  box.style.display = 'block';
+  box.innerHTML = `<strong>Something went wrong:</strong><br>${msg}`;
+}
+
+// ── Main function ──────────────────────────────────────────────────────
+async function runInsights() {
+  // Config check
+  if (CONFIG.SHEET_CSV_URL.includes('YOUR_') || CONFIG.CLAUDE_API_KEY.includes('YOUR_')) {
+    document.getElementById('config-warning').style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('error-box').style.display = 'none';
+  document.getElementById('config-warning').style.display = 'none';
+  setLoading(true);
+
+  // ── Step 1: Fetch Google Sheet CSV ─────────────────────────
+  let rows;
+  try {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(CONFIG.SHEET_CSV_URL)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error('Could not fetch sheet. Make sure it is published publicly.');
+    const text = await res.text();
+    rows = parseCSV(text);
+  } catch (e) {
+    showError(`Google Sheets fetch failed: ${e.message}`);
+    return;
+  }
+
+  // ── Step 2: Build a data summary for Claude ────────────────
+  const dataSummary = rows.slice(0, 50).map(r => JSON.stringify(r)).join('\n');
+  const prompt = `
+You are a B2B SaaS marketing analyst. Below is raw data from a Marketing Revenue Dashboard for Fleetx (a fleet management SaaS).
+
+DATA:
+${dataSummary}
+
+Based on this data, produce a JSON response with exactly this structure:
+{
+  "narrative": "2-3 sentence executive summary of overall marketing health",
+  "hits": ["insight 1", "insight 2", "insight 3"],
+  "misses": ["insight 1", "insight 2", "insight 3"],
+  "watch": ["insight 1", "insight 2"]
+}
+
+Rules:
+- Each insight must be 1 specific, data-backed sentence. Mention actual numbers/zones/products where possible.
+- hits = things performing well vs expectations
+- misses = things clearly underperforming or needing urgent action
+- watch = things that are borderline or trending in a concerning direction
+- Return ONLY the JSON. No markdown, no explanation.
+`;
+
+  // ── Step 3: Call Claude API ────────────────────────────────
+  let result;
+  try {
+    const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CONFIG.CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!apiRes.ok) {
+      const err = await apiRes.json();
+      throw new Error(err.error?.message || 'Claude API error');
+    }
+    const apiData = await apiRes.json();
+    const raw = apiData.content[0].text.replace(/```json|```/g, '').trim();
+    result = JSON.parse(raw);
+  } catch (e) {
+    showError(`Claude API error: ${e.message}`);
+    return;
+  }
+
+  // ── Step 4: Render ─────────────────────────────────────────
+  document.getElementById('narrative-text').textContent = result.narrative;
+
+  document.getElementById('hits-grid').innerHTML =
+    (result.hits || []).map(t => makeCard(t, 'hit')).join('');
+  document.getElementById('misses-grid').innerHTML =
+    (result.misses || []).map(t => makeCard(t, 'miss')).join('');
+  document.getElementById('watch-grid').innerHTML =
+    (result.watch || []).map(t => makeCard(t, 'watch')).join('');
+
+  const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  document.getElementById('last-updated').textContent = `Updated ${now}`;
+  document.getElementById('data-note').textContent = `${rows.length} rows loaded from Google Sheets`;
+
+  setLoading(false);
+}
+
+// ── Auto-refresh ───────────────────────────────────────────────────────
+runInsights();
+if (CONFIG.AUTO_REFRESH_MINUTES > 0) {
+  setInterval(runInsights, CONFIG.AUTO_REFRESH_MINUTES * 60 * 1000);
+}
+</script>
+</body>
+</html>
