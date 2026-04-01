@@ -220,7 +220,7 @@
 
     // Paste your Claude API key here
     // (Get it from console.anthropic.com)
-    CLAUDE_API_KEY: "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",
+    CLAUDE_API_KEY: "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",
 
     // How often to auto-refresh (in minutes). 0 = no auto-refresh
     AUTO_REFRESH_MINUTES: 30,
@@ -325,10 +325,19 @@ async function runInsights() {
   let rows = [];
   try {
     for (const sheetUrl of CONFIG.SHEET_CSV_URLS) {
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetUrl)}`;
-      const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error('Could not fetch sheet. Make sure it is published publicly.');
-      const text = await res.text();
+      let text = null;
+      const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(sheetUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(sheetUrl)}`
+      ];
+      for (const proxyUrl of proxies) {
+        try {
+          const res = await fetch(proxyUrl);
+          if (res.ok) { text = await res.text(); break; }
+        } catch(e) { continue; }
+      }
+      if (!text) throw new Error('Could not fetch sheet. Make sure it is published publicly.');
       const sheetRows = parseCSV(text);
       rows = rows.concat(sheetRows);
     }
